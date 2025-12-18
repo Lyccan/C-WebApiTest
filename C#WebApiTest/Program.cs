@@ -48,7 +48,7 @@ public class Carro
     }
 }
 
-    static class PopulateCarro
+    static class CarroRepository
 {
     private static List<Carro> carros = new List<Carro>
     {
