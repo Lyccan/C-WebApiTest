@@ -22,7 +22,7 @@ app.Run(async (HttpContext context) =>
         {
             await context.Response.WriteAsync($"Lista de carros: {Environment.NewLine}");
 
-            var carros = PopulateCarro.GetCarros();
+            var carros = CarroRepository.GetCarros();
 
             foreach (var carro in carros)
             {
@@ -30,6 +30,55 @@ app.Run(async (HttpContext context) =>
             }
         }
     }
+        if (context.Request.Method == "POST")
+        {
+            if (context.Request.Path.StartsWithSegments("/carros")) {
+                using var reader = new StreamReader(context.Request.Body);
+                var body = await reader.ReadToEndAsync();
+
+                if(string.IsNullOrWhiteSpace(body))
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsync("Request vazio.");
+            }
+
+                Carro? carro = System.Text.Json.JsonSerializer.Deserialize<Carro>(body);
+                if(carro is null)
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsync("O objeto não pode ser nulo.");
+            }
+            
+                context.Response.StatusCode = StatusCodes.Status201Created;
+                await context.Response.WriteAsync("Objeto criado");
+                CarroRepository.AddCarro(carro);
+
+            }
+        }
+
+        if(context.Request.Method == "PUT")
+        {
+            if(context.Request.Path.StartsWithSegments("/carros"))
+            {
+                using var reader = new StreamReader(context.Request.Body);
+                var body = await reader.ReadToEndAsync();
+                if(string.IsNullOrWhiteSpace(body))
+                {
+                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    await context.Response.WriteAsync("Request vazio.");
+                }
+                Carro? carro = System.Text.Json.JsonSerializer.Deserialize<Carro>(body);
+                if(carro is null)
+                {
+                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    await context.Response.WriteAsync("O objeto não pode ser nulo.");
+                }
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                await context.Response.WriteAsync("Objeto atualizado");
+                CarroRepository.UpdadateCarro(carro);
+        }
+        }
+
 });
 
 app.Run();
@@ -48,7 +97,7 @@ public class Carro
     }
 }
 
-    static class CarroRepository
+static class CarroRepository
 {
     private static List<Carro> carros = new List<Carro>
     {
@@ -58,6 +107,31 @@ public class Carro
     };
 
     public static List<Carro> GetCarros() => carros;
+    public static void AddCarro(Carro? carro)
+    {
+        if (carro is not null)
+        {
+            carros.Add(carro);
+        }
+    }
+
+    public static bool UpdadateCarro(Carro? carro)
+    {
+
+        if (carro is not null)
+        {
+            var updateCarro = carros.FirstOrDefault(c => c.Id == carro.Id);
+            if (updateCarro is not null)
+            {
+                updateCarro.Marca = carro.Marca;
+                updateCarro.AnoFabricacao = carro.AnoFabricacao;
+
+                return true;
+            }
+        }
+        return false;
+    }
+
 }
 
 
