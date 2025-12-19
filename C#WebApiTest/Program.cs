@@ -16,6 +16,7 @@ app.Run(async (HttpContext context) =>
             {
                 await context.Response.WriteAsync($"{key}: {context.Request.Headers[key]} {Environment.NewLine}");
             }
+            return;
         }
 
         if (context.Request.Path.StartsWithSegments("/carros"))
@@ -28,6 +29,12 @@ app.Run(async (HttpContext context) =>
             {
                 await context.Response.WriteAsync($"Marca: {carro.Marca}, Ano de Fabricação: {carro.AnoFabricacao} {Environment.NewLine}");
             }
+            return;
+        }
+        else
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            await context.Response.WriteAsync("A página não existe.");
         }
     }
         if (context.Request.Method == "POST")
@@ -78,6 +85,32 @@ app.Run(async (HttpContext context) =>
                 CarroRepository.UpdadateCarro(carro);
         }
         }
+
+
+    if (context.Request.Method == "DELETE")
+    {
+        if (context.Request.Path.StartsWithSegments("/carros"))
+        {
+            var idString = context.Request.Query["id"];
+            if (string.IsNullOrWhiteSpace(idString))
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsync("Id não pode ser nulo.");
+                return;
+            }
+
+            if (!int.TryParse(idString, out int id))
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsync("Id inválido.");
+                return;
+            }
+
+            var deleted = CarroRepository.DeleteCarro(id);
+            context.Response.StatusCode = deleted ? StatusCodes.Status200OK : StatusCodes.Status404NotFound;
+            await context.Response.WriteAsync(deleted ? "Objeto deletado" : "Objeto não encontrado");
+        }
+    }
 
 });
 
@@ -131,6 +164,21 @@ static class CarroRepository
         }
         return false;
     }
+
+    public static bool DeleteCarro(int? id)
+    {
+        if (id is not null)
+        {
+            var carro = carros.FirstOrDefault(c => c.Id == id);
+            if (carro is not null)
+            {
+                carros.Remove(carro);
+                return true;
+            }
+        }
+        return false;
+    }
+
 
 }
 
