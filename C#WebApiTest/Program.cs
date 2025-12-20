@@ -104,9 +104,18 @@ app.Run(async (HttpContext context) =>
                 return;
             }
 
+            // Aqui o ideal é utilizar alguma tecnologia para encriptar, porém será deixado assim, pelo menos no momento.
+            if(context.Request.Headers.Authorization == "admin")
+            {
+
             var deleted = CarroRepository.DeleteCarro(id);
             context.Response.StatusCode = deleted ? StatusCodes.Status200OK : StatusCodes.Status404NotFound;
             await context.Response.WriteAsync(deleted ? "Objeto deletado" : "Objeto não encontrado");
+            return;
+            }
+
+           context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            await context.Response.WriteAsync("Usuário não autorizado");
 
         }
     }

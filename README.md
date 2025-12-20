@@ -62,7 +62,7 @@ Em caso de preferência de desenvolver com a requisição estando no corpo, pode
 
 
     }
-```}```
+        }
 
 
 Exemplos de requisição JSON para teste da API:
