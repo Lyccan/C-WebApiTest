@@ -2,14 +2,17 @@ var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
 app.Run(async (HttpContext context) =>
-{
-    if (context.Request.Method == "GET")
+{       
+
+   
+
+    if (context.Request.Path.StartsWithSegments("/"))
     {
-        if (context.Request.Path.StartsWithSegments("/"))
+
+        if (context.Request.Method == "GET")
         {
             await context.Response.WriteAsync($"Método {context.Request.Method}{Environment.NewLine}");
             await context.Response.WriteAsync($"a URL é: {context.Request.Path} {Environment.NewLine}");
-
             var keys = context.Request.Headers.Keys;
             await context.Response.WriteAsync($"Headers: {Environment.NewLine}");
             foreach (var key in keys)
@@ -18,8 +21,11 @@ app.Run(async (HttpContext context) =>
             }
             return;
         }
+    }
 
-        if (context.Request.Path.StartsWithSegments("/carros"))
+    else if (context.Request.Path.StartsWithSegments("/carros"))
+    {
+        if (context.Request.Method == "GET")
         {
             await context.Response.WriteAsync($"Lista de carros: {Environment.NewLine}");
 
@@ -31,66 +37,58 @@ app.Run(async (HttpContext context) =>
             }
             return;
         }
-        else
-        {
-            context.Response.StatusCode = StatusCodes.Status404NotFound;
-            await context.Response.WriteAsync("A página não existe.");
-        }
-    }
-        if (context.Request.Method == "POST")
-        {
-            if (context.Request.Path.StartsWithSegments("/carros")) {
-                using var reader = new StreamReader(context.Request.Body);
-                var body = await reader.ReadToEndAsync();
 
-                if(string.IsNullOrWhiteSpace(body))
+
+        else if (context.Request.Method == "POST")
+        {
+
+            using var reader = new StreamReader(context.Request.Body);
+            var body = await reader.ReadToEndAsync();
+
+            if (string.IsNullOrWhiteSpace(body))
             {
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 await context.Response.WriteAsync("Request vazio.");
             }
 
-                Carro? carro = System.Text.Json.JsonSerializer.Deserialize<Carro>(body);
-                if(carro is null)
+            Carro? carro = System.Text.Json.JsonSerializer.Deserialize<Carro>(body);
+            if (carro is null)
             {
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 await context.Response.WriteAsync("O objeto não pode ser nulo.");
             }
-            
-                context.Response.StatusCode = StatusCodes.Status201Created;
-                await context.Response.WriteAsync("Objeto criado");
-                CarroRepository.AddCarro(carro);
 
-            }
+            context.Response.StatusCode = StatusCodes.Status201Created;
+            await context.Response.WriteAsync("Objeto criado");
+            CarroRepository.AddCarro(carro);
+
         }
 
-        if(context.Request.Method == "PUT")
+        else if (context.Request.Method == "PUT")
         {
-            if(context.Request.Path.StartsWithSegments("/carros"))
+
+            using var reader = new StreamReader(context.Request.Body);
+            var body = await reader.ReadToEndAsync();
+            if (string.IsNullOrWhiteSpace(body))
             {
-                using var reader = new StreamReader(context.Request.Body);
-                var body = await reader.ReadToEndAsync();
-                if(string.IsNullOrWhiteSpace(body))
-                {
-                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                    await context.Response.WriteAsync("Request vazio.");
-                }
-                Carro? carro = System.Text.Json.JsonSerializer.Deserialize<Carro>(body);
-                if(carro is null)
-                {
-                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                    await context.Response.WriteAsync("O objeto não pode ser nulo.");
-                }
-                context.Response.StatusCode = StatusCodes.Status200OK;
-                await context.Response.WriteAsync("Objeto atualizado");
-                CarroRepository.UpdadateCarro(carro);
-        }
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsync("Request vazio.");
+            }
+            Carro? carro = System.Text.Json.JsonSerializer.Deserialize<Carro>(body);
+            if (carro is null)
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsync("O objeto não pode ser nulo.");
+            }
+            context.Response.StatusCode = StatusCodes.Status200OK;
+            await context.Response.WriteAsync("Objeto atualizado");
+            CarroRepository.UpdadateCarro(carro);
+
         }
 
-
-    if (context.Request.Method == "DELETE")
-    {
-        if (context.Request.Path.StartsWithSegments("/carros"))
+        else if (context.Request.Method == "DELETE")
         {
+
             var idString = context.Request.Query["id"];
             if (string.IsNullOrWhiteSpace(idString))
             {
@@ -109,9 +107,15 @@ app.Run(async (HttpContext context) =>
             var deleted = CarroRepository.DeleteCarro(id);
             context.Response.StatusCode = deleted ? StatusCodes.Status200OK : StatusCodes.Status404NotFound;
             await context.Response.WriteAsync(deleted ? "Objeto deletado" : "Objeto não encontrado");
+
         }
     }
 
+    else
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        await context.Response.WriteAsync("A página não existe");
+    }
 });
 
 app.Run();
