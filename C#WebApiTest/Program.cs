@@ -27,7 +27,37 @@ app.Run(async (HttpContext context) =>
     {
         if (context.Request.Method == "GET")
         {
-            await context.Response.WriteAsync($"Lista de carros: {Environment.NewLine}");
+
+            var idString = context.Request.Query["id"];
+            
+            if(!string.IsNullOrWhiteSpace(idString)) { 
+            
+                if(!int.TryParse(idString, out int id)) {
+                    
+                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    await context.Response.WriteAsync("Id deve ser um número.");
+                }
+
+                Carro? carroObject = CarroRepository.GetCarroById(id);
+
+                if (carroObject is null)
+                {
+                    context.Response.StatusCode = StatusCodes.Status404NotFound;
+                    await context.Response.WriteAsync("Carro não encontrado");
+                    return;
+                }
+
+                string carro = carroObject.ToString() ?? string.Empty;
+
+                await context.Response.WriteAsync($"Marca: {carroObject.Marca}{Environment.NewLine}" +
+                    $"Ano de Fabricação: {carroObject.AnoFabricacao}");
+                return;
+            
+            }
+
+
+
+                await context.Response.WriteAsync($"Lista de carros: {Environment.NewLine}");
 
             var carros = CarroRepository.GetCarros();
 
@@ -190,6 +220,15 @@ static class CarroRepository
             }
         }
         return false;
+    }
+
+    public static Carro? GetCarroById(int? id)
+    {
+        if (id is not null)
+        {
+            return carros.FirstOrDefault(c => c.Id == id);
+        }
+        return null;
     }
 
 
